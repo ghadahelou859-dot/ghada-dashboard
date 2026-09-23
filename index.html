@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Inviteation by Ghada — Dashboard</title>
+<style>
+:root{
+  --bg:#fbf8fb;--card:#fff;--line:#eadbe5;--text:#332c32;--muted:#8d7b87;
+  --rose:#c78fa7;--rose2:#efdde6;--mauve:#8d7ab0;--soft:#f7edf3;
+  --shadow:0 12px 32px rgba(79,54,72,.08)
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Tahoma,sans-serif;background:linear-gradient(180deg,#fffafd 0%,#f7f0f6 100%);color:var(--text)}
+.wrap{width:min(1180px,calc(100% - 24px));margin:18px auto 56px}
+.hero,.panel{background:rgba(255,255,255,.92);border:1px solid var(--line);border-radius:28px;box-shadow:var(--shadow)}
+.hero{padding:22px;display:grid;grid-template-columns:1.2fr .8fr;gap:18px;align-items:center}
+.brand{font-size:14px;color:var(--muted);margin-bottom:6px}
+.hero h1{margin:0 0 8px;font-size:clamp(28px,4vw,42px)}
+.hero p{margin:0;color:var(--muted);line-height:1.8}
+.hero-art{min-height:220px;border-radius:24px;border:1px solid var(--line);background:radial-gradient(circle at 30% 25%,#f3dce7 0,transparent 35%),radial-gradient(circle at 75% 75%,#e2d9f1 0,transparent 32%),linear-gradient(145deg,#fff,#f8eef5);display:flex;align-items:center;justify-content:center}
+.monogram{width:96px;height:96px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#fff;border:1px solid var(--line);font-size:38px;font-weight:700;color:var(--rose);box-shadow:var(--shadow)}
+.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:16px}
+.btn{border:none;border-radius:999px;padding:11px 16px;font:inherit;font-weight:700;cursor:pointer;background:var(--rose);color:#fff}
+.btn.alt{background:#fff;color:var(--text);border:1px solid var(--line)}
+.btn:disabled{opacity:.6;cursor:not-allowed}
+.metrics{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:16px}
+.metric{background:#fff;border:1px solid var(--line);border-radius:20px;padding:15px;box-shadow:var(--shadow)}
+.metric small{display:block;color:var(--muted);margin-bottom:5px}
+.metric strong{font-size:29px}
+.panel{margin-top:16px;padding:18px}
+.panel-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.panel-head h2{margin:0;font-size:22px}
+.muted{color:var(--muted);font-size:14px}
+.filters{display:flex;gap:8px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:#fff;color:var(--text);border-radius:999px;padding:9px 13px;cursor:pointer}
+.chip.active{background:var(--rose2)}
+.projects{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.project{border:1px solid var(--line);border-radius:24px;overflow:hidden;background:#fff;cursor:pointer;transition:.18s ease;box-shadow:0 8px 20px rgba(75,52,70,.04)}
+.project:hover{transform:translateY(-3px);box-shadow:var(--shadow)}
+.cover{aspect-ratio:16/10;background:linear-gradient(135deg,#fff7fb,#eee7f2);background-size:cover;background-position:center;display:flex;align-items:flex-end;padding:12px}
+.badge{background:#ffffffdd;border:1px solid var(--line);border-radius:999px;padding:6px 9px;font-size:12px;color:var(--muted)}
+.project-body{padding:14px}
+.project-title{font-weight:700;margin-bottom:8px}
+.stats{display:flex;gap:10px;flex-wrap:wrap;color:var(--muted);font-size:13px}
+.empty{padding:28px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:18px}
+.modal{position:fixed;inset:0;background:rgba(46,34,43,.42);display:none;align-items:center;justify-content:center;padding:16px;z-index:50}
+.modal.open{display:flex}
+.modal-card{width:min(760px,100%);max-height:92vh;overflow:auto;background:#fff;border:1px solid var(--line);border-radius:28px;padding:18px;box-shadow:var(--shadow)}
+.top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.close{border:1px solid var(--line);background:#fff;width:42px;height:42px;border-radius:50%;font-size:22px;cursor:pointer}
+.form{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+.field{display:flex;flex-direction:column;gap:6px}
+.field.full{grid-column:1/-1}
+.field label{font-size:13px;color:var(--muted)}
+.field input,.field select{min-height:46px;border:1px solid var(--line);border-radius:14px;padding:10px 12px;font:inherit;background:#fff}
+.preview{height:180px;border:1px dashed #d6bccc;border-radius:18px;background:#fff9fc;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;cursor:pointer}
+.preview img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none}
+.notice{display:none;margin-top:12px;padding:11px 12px;border-radius:14px;font-size:14px}
+.notice.show{display:block}.notice.ok{background:#edf8f3;color:#345f4e}.notice.err{background:#fff1f3;color:#8b4354}
+.codebox{display:none;margin-top:14px}.codebox textarea{width:100%;min-height:78px;border:1px solid var(--line);border-radius:14px;padding:10px;direction:ltr;font-family:monospace;background:#fff9fc}
+.details{display:grid;grid-template-columns:.8fr 1.2fr;gap:16px}.detail-cover{aspect-ratio:4/3;border-radius:20px;background:linear-gradient(135deg,#fff7fb,#eee7f2);background-size:cover;background-position:center;border:1px solid var(--line)}
+.detail-kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.detail-kpi{padding:12px;border:1px solid var(--line);border-radius:16px;background:#fffafd}.detail-kpi strong{font-size:24px;display:block}
+.link{color:var(--rose);text-decoration:none;font-weight:700}
+@media(max-width:900px){.hero,.details{grid-template-columns:1fr}.metrics{grid-template-columns:repeat(2,1fr)}.projects{grid-template-columns:1fr 1fr}}
+@media(max-width:620px){.projects,.form{grid-template-columns:1fr}.field.full{grid-column:auto}.metrics{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <section class="hero">
+    <div>
+      <div class="brand">Inviteation by Ghada</div>
+      <h1>مشاريعي بالأرقام</h1>
+      <p>لوحة خاصة تجمع الكروت، الدروس والصفحات التفاعلية مع الزيارات والتفاعل في مكان واحد.</p>
+      <div class="actions">
+        <button id="loginBtn" class="btn alt">دخول الإدارة</button>
+        <button id="addBtn" class="btn" style="display:none">+ إضافة مشروع جديد</button>
+        <button id="logoutBtn" class="btn alt" style="display:none">تسجيل خروج</button>
+      </div>
+      <div id="status" class="muted" style="margin-top:9px">سجلي الدخول لعرض الإحصائيات الخاصة.</div>
+    </div>
+    <div class="hero-art"><div class="monogram">G</div></div>
+  </section>
+
+  <section class="metrics">
+    <div class="metric"><small>إجمالي الزيارات</small><strong id="mViews">—</strong></div>
+    <div class="metric"><small>الزوار المختلفون</small><strong id="mUnique">—</strong></div>
+    <div class="metric"><small>الإعجابات</small><strong id="mLikes">—</strong></div>
+    <div class="metric"><small>التعليقات</small><strong id="mComments">—</strong></div>
+    <div class="metric"><small>التقييمات</small><strong id="mRatings">—</strong></div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <div><h2>المشاريع</h2><div class="muted">اضغطي على أي مشروع لعرض تفاصيله.</div></div>
+      <div class="filters">
+        <button class="chip active" data-filter="all">الكل</button>
+        <button class="chip" data-filter="invitation">الكروت</button>
+        <button class="chip" data-filter="lesson">الدروس</button>
+        <button class="chip" data-filter="interactive_page">الصفحات</button>
+        <button id="refreshBtn" class="chip">تحديث</button>
+      </div>
+    </div>
+    <div id="projects" class="projects"><div class="empty">سجلي الدخول لعرض المشاريع.</div></div>
+  </section>
+</div>
+
+<div id="loginModal" class="modal"><div class="modal-card" style="width:min(520px,100%)">
+  <div class="top"><div><strong style="font-size:22px">دخول الإدارة</strong><div class="muted">أدخلي كلمة الإدارة الخاصة.</div></div><button class="close" data-close="loginModal">×</button></div>
+  <div class="field" style="margin-top:14px"><label>كلمة الإدارة</label><input id="adminPass" type="password"></div>
+  <div class="actions"><button id="doLogin" class="btn">دخول</button></div>
+  <div id="loginNotice" class="notice"></div>
+</div></div>
+
+<div id="addModal" class="modal"><div class="modal-card">
+  <div class="top"><div><strong style="font-size:22px">إضافة مشروع جديد</strong><div class="muted">ينحفظ المشروع وصورة الغلاف مباشرة في Supabase.</div></div><button class="close" data-close="addModal">×</button></div>
+  <div class="form">
+    <div class="field full"><label>صورة الغلاف</label><div id="picker" class="preview"><input id="coverInput" type="file" accept="image/jpeg,image/png,image/webp" hidden><img id="coverPreview"><span id="coverHint">اضغطي لاختيار صورة الغلاف</span></div></div>
+    <div class="field"><label>اسم المشروع</label><input id="titleInput" maxlength="120" placeholder="مثلاً: كرت خطوبة محمد وغادة"></div>
+    <div class="field"><label>نوع المشروع</label><select id="typeInput"><option value="invitation">كرت / دعوة</option><option value="lesson">درس تفاعلي</option><option value="interactive_page">صفحة تفاعلية</option><option value="other">أخرى</option></select></div>
+    <div class="field"><label>Slug</label><input id="slugInput" maxlength="80" placeholder="يُنشأ تلقائيًا"></div>
+    <div class="field"><label>رابط المشروع</label><input id="urlInput" type="url" placeholder="https://..."></div>
+  </div>
+  <div class="actions"><button id="saveBtn" class="btn">حفظ وربط</button><button class="btn alt" data-close="addModal">إلغاء</button></div>
+  <div id="saveNotice" class="notice"></div>
+  <div id="codeBox" class="codebox"><div class="muted" style="margin-bottom:6px">كود الربط الجاهز للكرت:</div><textarea id="trackingCode" readonly></textarea></div>
+</div></div>
+
+<div id="detailModal" class="modal"><div class="modal-card">
+  <div class="top"><div><strong id="detailTitle" style="font-size:22px">تفاصيل المشروع</strong><div id="detailType" class="muted"></div></div><button class="close" data-close="detailModal">×</button></div>
+  <div class="details" style="margin-top:14px">
+    <div id="detailCover" class="detail-cover"></div>
+    <div>
+      <div id="detailKpis" class="detail-kpis"></div>
+      <div id="detailLinkWrap" style="margin-top:14px"></div>
+    </div>
+  </div>
+</div></div>
+
+<script>
+const API="https://jzswtwicvgppisasrkqe.supabase.co/functions/v1/ghada-dashboard-api";
+const $=id=>document.getElementById(id);
+let adminPass=sessionStorage.getItem("ghada_admin_pass")||"";
+let projectsData=[];
+let currentFilter="all";
+
+function openModal(id){$(id).classList.add("open")}
+function closeModal(id){$(id).classList.remove("open")}
+function showNotice(el,msg,ok=false){el.className="notice show "+(ok?"ok":"err");el.textContent=msg}
+function clearNotice(el){el.className="notice";el.textContent=""}
+function slugify(v){return v.trim().toLowerCase().normalize("NFKD").replace(/[^\p{L}\p{N}]+/gu,"-").replace(/^-+|-+$/g,"").slice(0,80)}
+function authUI(){const on=!!adminPass;$("loginBtn").style.display=on?"none":"inline-block";$("addBtn").style.display=on?"inline-block":"none";$("logoutBtn").style.display=on?"inline-block":"none";$("status").textContent=on?"✓ وضع الإدارة مفعّل":"سجلي الدخول لعرض الإحصائيات الخاصة."}
+
+document.querySelectorAll("[data-close]").forEach(b=>b.addEventListener("click",()=>closeModal(b.dataset.close)));
+document.querySelectorAll(".modal").forEach(m=>m.addEventListener("click",e=>{if(e.target===m)closeModal(m.id)}));
+
+async function jsonApi(payload){
+  const r=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error(j.error||"تعذر الاتصال بقاعدة البيانات.");
+  return j;
+}
+
+$("loginBtn").onclick=()=>openModal("loginModal");
+$("doLogin").onclick=async()=>{
+  clearNotice($("loginNotice"));
+  try{
+    await jsonApi({action:"login",password:$("adminPass").value});
+    adminPass=$("adminPass").value;
+    sessionStorage.setItem("ghada_admin_pass",adminPass);
+    authUI();
+    showNotice($("loginNotice"),"تم تسجيل الدخول.",true);
+    setTimeout(()=>{closeModal("loginModal");loadData()},300);
+  }catch(e){showNotice($("loginNotice"),e.message)}
+};
+$("logoutBtn").onclick=()=>{adminPass="";sessionStorage.removeItem("ghada_admin_pass");projectsData=[];authUI();resetMetrics();renderProjects()};
+$("addBtn").onclick=()=>{clearNotice($("saveNotice"));$("codeBox").style.display="none";openModal("addModal")};
+$("refreshBtn").onclick=loadData;
+
+$("titleInput").oninput=e=>{if(!$("slugInput").dataset.edited)$("slugInput").value=slugify(e.target.value)};
+$("slugInput").oninput=e=>$("slugInput").dataset.edited=e.target.value?"1":"";
+
+$("picker").onclick=()=>$("coverInput").click();
+$("coverInput").onchange=()=>{
+  const f=$("coverInput").files?.[0];
+  if(!f)return;
+  const u=URL.createObjectURL(f);
+  $("coverPreview").src=u;$("coverPreview").style.display="block";$("coverHint").style.display="none";
+};
+
+$("saveBtn").onclick=async()=>{
+  clearNotice($("saveNotice"));
+  const title=$("titleInput").value.trim();
+  if(!title)return showNotice($("saveNotice"),"اسم المشروع مطلوب.");
+  const fd=new FormData();
+  fd.append("action","create_project");
+  fd.append("password",adminPass);
+  fd.append("title",title);
+  fd.append("project_type",$("typeInput").value);
+  fd.append("slug",$("slugInput").value.trim());
+  fd.append("project_url",$("urlInput").value.trim());
+  const f=$("coverInput").files?.[0];if(f)fd.append("cover",f);
+
+  $("saveBtn").disabled=true;$("saveBtn").textContent="جاري الحفظ...";
+  try{
+    const r=await fetch(API,{method:"POST",body:fd});
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok)throw new Error(j.error||"تعذر حفظ المشروع.");
+    showNotice($("saveNotice"),"✓ تم حفظ المشروع وربطه بقاعدة البيانات.",true);
+    $("trackingCode").value=j.tracking_code||'GhadaAnalytics.init({ projectSlug: "'+j.project.slug+'", pageKey: "main" });';
+    $("codeBox").style.display="block";
+    await loadData();
+  }catch(e){showNotice($("saveNotice"),e.message)}
+  finally{$("saveBtn").disabled=false;$("saveBtn").textContent="حفظ وربط"}
+};
+
+document.querySelectorAll(".chip[data-filter]").forEach(btn=>btn.onclick=()=>{
+  document.querySelectorAll(".chip[data-filter]").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");currentFilter=btn.dataset.filter;renderProjects();
+});
+
+function resetMetrics(){["mViews","mUnique","mLikes","mComments","mRatings"].forEach(id=>$(id).textContent="—")}
+async function loadData(){
+  if(!adminPass)return;
+  $("projects").innerHTML='<div class="empty">جاري تحميل البيانات...</div>';
+  try{
+    const j=await jsonApi({action:"list",password:adminPass});
+    $("mViews").textContent=j.totals.total_views;
+    $("mUnique").textContent=j.totals.unique_visitors;
+    $("mLikes").textContent=j.totals.total_likes;
+    $("mComments").textContent=j.totals.total_comments;
+    $("mRatings").textContent=j.totals.total_ratings;
+    projectsData=j.projects||[];
+    renderProjects();
+  }catch(e){$("projects").innerHTML='<div class="empty">'+e.message+"</div>"}
+}
+function renderProjects(){
+  if(!adminPass){$("projects").innerHTML='<div class="empty">سجلي الدخول لعرض المشاريع.</div>';return}
+  const rows=currentFilter==="all"?projectsData:projectsData.filter(p=>p.project_type===currentFilter);
+  if(!rows.length){$("projects").innerHTML='<div class="empty">لا يوجد مشاريع في هذا القسم.</div>';return}
+  $("projects").innerHTML=rows.map(p=>`
+    <div class="project" data-slug="${p.slug}">
+      <div class="cover" ${p.cover_image_url?`style="background-image:url('${p.cover_image_url}')"`:""}><span class="badge">${typeLabel(p.project_type)}</span></div>
+      <div class="project-body"><div class="project-title">${escapeHtml(p.title)}</div><div class="stats"><span>👁 ${p.total_views}</span><span>👤 ${p.unique_visitors}</span><span>❤️ ${p.total_likes}</span><span>💬 ${p.total_comments}</span><span>⭐ ${p.total_ratings}</span></div></div>
+    </div>`).join("");
+  document.querySelectorAll(".project").forEach(card=>card.onclick=()=>openDetails(card.dataset.slug));
+}
+function openDetails(slug){
+  const p=projectsData.find(x=>x.slug===slug);if(!p)return;
+  $("detailTitle").textContent=p.title;$("detailType").textContent=typeLabel(p.project_type);
+  $("detailCover").style.backgroundImage=p.cover_image_url?`url("${p.cover_image_url}")`:"";
+  $("detailKpis").innerHTML=[
+    ["الزيارات",p.total_views],["الزوار",p.unique_visitors],["الإعجابات",p.total_likes],["التعليقات",p.total_comments],["التقييمات",p.total_ratings]
+  ].map(([l,v])=>`<div class="detail-kpi"><small class="muted">${l}</small><strong>${v}</strong></div>`).join("");
+  $("detailLinkWrap").innerHTML=p.project_url?`<a class="link" target="_blank" rel="noopener" href="${p.project_url}">فتح المشروع ↗</a>`:'<span class="muted">لا يوجد رابط محفوظ للمشروع.</span>';
+  openModal("detailModal");
+}
+function typeLabel(t){return t==="invitation"?"كرت / دعوة":t==="lesson"?"درس":t==="interactive_page"?"صفحة تفاعلية":"مشروع"}
+function escapeHtml(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]))}
+
+authUI();if(adminPass)loadData();
+</script>
+</body>
+</html>
