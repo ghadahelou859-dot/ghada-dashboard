@@ -68,6 +68,9 @@ body{margin:0;font-family:Arial,Tahoma,sans-serif;background:linear-gradient(180
 .details{display:grid;grid-template-columns:.8fr 1.2fr;gap:16px}.detail-cover{aspect-ratio:4/3;border-radius:20px;background:linear-gradient(135deg,#fff7fb,#eee7f2);border:1px solid var(--line);position:relative;overflow:hidden}.detail-cover img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .detail-kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.detail-kpi{padding:12px;border:1px solid var(--line);border-radius:16px;background:#fffafd}.detail-kpi strong{font-size:24px;display:block}
 .link{color:var(--rose);text-decoration:none;font-weight:700}
+.preview-shell{width:min(1100px,96vw);height:min(820px,92vh);background:#fff;border-radius:28px;border:1px solid var(--line);overflow:hidden;display:flex;flex-direction:column}
+.preview-head{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--line)}
+.preview-frame{width:100%;flex:1;border:0;background:#fff}
 @media(max-width:900px){.hero,.details{grid-template-columns:1fr}.metrics{grid-template-columns:repeat(2,1fr)}.projects{grid-template-columns:1fr 1fr}}
 @media(max-width:620px){.projects,.form{grid-template-columns:1fr}.field.full{grid-column:auto}.metrics{grid-template-columns:1fr 1fr}}
 </style>
@@ -129,7 +132,7 @@ body{margin:0;font-family:Arial,Tahoma,sans-serif;background:linear-gradient(180
   <div class="form">
     <div class="field full"><label>صورة الغلاف</label><div id="picker" class="preview"><input id="coverInput" type="file" accept="image/jpeg,image/png,image/webp" hidden><img id="coverPreview"><span id="coverHint">اضغطي لاختيار صورة الغلاف</span></div>
     <div id="cropTools" class="crop-tools">
-      <div class="crop-row"><span class="muted">تكبير</span><input id="zoomRange" type="range" min="100" max="250" value="100" step="1"><strong id="zoomValue">100%</strong></div>
+      <div class="crop-row"><span class="muted">تكبير</span><input id="zoomRange" type="range" min="60" max="250" value="100" step="1"><strong id="zoomValue">100%</strong></div>
       <div class="crop-help">اسحبي الصورة داخل الإطار لتحددي الجزء اللي بدك يظل ظاهر.</div>
     </div>
   </div>
@@ -154,6 +157,16 @@ body{margin:0;font-family:Arial,Tahoma,sans-serif;background:linear-gradient(180
   </div>
 </div></div>
 
+<div id="projectPreviewModal" class="modal">
+  <div class="preview-shell">
+    <div class="preview-head">
+      <div><strong id="previewTitle">معاينة المشروع</strong><div class="muted">تقدري تتفاعلي مع المشروع من داخل نفس الصفحة.</div></div>
+      <button class="close" data-close="projectPreviewModal">×</button>
+    </div>
+    <iframe id="projectPreviewFrame" class="preview-frame" allow="autoplay; fullscreen; clipboard-write"></iframe>
+  </div>
+</div>
+
 <script>
 const API="https://jzswtwicvgppisasrkqe.supabase.co/functions/v1/ghada-dashboard-api";
 const $=id=>document.getElementById(id);
@@ -169,7 +182,11 @@ function clearNotice(el){el.className="notice";el.textContent=""}
 function slugify(v){return v.trim().toLowerCase().normalize("NFKD").replace(/[^\p{L}\p{N}]+/gu,"-").replace(/^-+|-+$/g,"").slice(0,80)}
 function authUI(){const on=!!adminPass;$("loginBtn").style.display=on?"none":"inline-block";$("addBtn").style.display=on?"inline-block":"none";$("logoutBtn").style.display=on?"inline-block":"none";$("status").textContent=on?"✓ وضع الإدارة مفعّل":"سجلي الدخول لعرض الإحصائيات الخاصة."}
 
-document.querySelectorAll("[data-close]").forEach(b=>b.addEventListener("click",()=>closeModal(b.dataset.close)));
+document.querySelectorAll("[data-close]").forEach(b=>b.addEventListener("click",()=>{
+  const id=b.dataset.close;
+  closeModal(id);
+  if(id==="projectPreviewModal")$("projectPreviewFrame").src="about:blank";
+}));
 document.querySelectorAll(".modal").forEach(m=>m.addEventListener("click",e=>{if(e.target===m)closeModal(m.id)}));
 
 async function jsonApi(payload){
@@ -288,6 +305,8 @@ $("saveBtn").onclick=async()=>{
     $("trackingCode").value=j.tracking_code||'GhadaAnalytics.init({ projectSlug: "'+j.project.slug+'", pageKey: "main" });';
     $("codeBox").style.display="block";
     await loadData();
+    // يظهر المشروع والأرقام مباشرة في الصفحة الرئيسية بعد الحفظ.
+    setTimeout(()=>closeModal("addModal"),900);
   }catch(e){showNotice($("saveNotice"),e.message)}
   finally{$("saveBtn").disabled=false;$("saveBtn").textContent="حفظ وربط"}
 };
@@ -340,8 +359,21 @@ function openDetails(slug){
   $("detailKpis").innerHTML=[
     ["الزيارات",p.total_views],["الزوار",p.unique_visitors],["الإعجابات",p.total_likes],["التعليقات",p.total_comments],["التقييمات",p.total_ratings]
   ].map(([l,v])=>`<div class="detail-kpi"><small class="muted">${l}</small><strong>${v}</strong></div>`).join("");
-  $("detailLinkWrap").innerHTML=p.project_url?`<a class="link" target="_blank" rel="noopener" href="${p.project_url}">فتح المشروع ↗</a>`:'<span class="muted">لا يوجد رابط محفوظ للمشروع.</span>';
+  $("detailLinkWrap").innerHTML=p.project_url?`
+    <div class="actions">
+      <button class="btn" id="openInsideBtn" type="button">فتح داخل الصفحة</button>
+      <a class="link" target="_blank" rel="noopener" href="${p.project_url}">فتح في تبويب جديد ↗</a>
+    </div>`:'<span class="muted">لا يوجد رابط محفوظ للمشروع.</span>';
+  if(p.project_url){
+    $("openInsideBtn").onclick=()=>openProjectPreview(p);
+  }
   openModal("detailModal");
+}
+function openProjectPreview(p){
+  if(!p?.project_url)return;
+  $("previewTitle").textContent=p.title||"معاينة المشروع";
+  $("projectPreviewFrame").src=p.project_url;
+  openModal("projectPreviewModal");
 }
 function typeLabel(t){return t==="invitation"?"كرت / دعوة":t==="lesson"?"درس":t==="interactive_page"?"صفحة تفاعلية":"مشروع"}
 function escapeHtml(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]))}
