@@ -229,7 +229,31 @@ $("doLogin").onclick=async()=>{
   }catch(e){showNotice($("loginNotice"),e.message)}
 };
 $("logoutBtn").onclick=()=>{adminPass="";sessionStorage.removeItem("ghada_admin_pass");projectsData=[];authUI();resetMetrics();renderProjects()};
-$("addBtn").onclick=()=>{clearNotice($("saveNotice"));$("codeBox").style.display="none";openModal("addModal")};
+function resetAddProjectForm(){
+  $("titleInput").value="";
+  $("typeInput").value="invitation";
+  $("slugInput").value="";
+  $("slugInput").dataset.edited="";
+  $("urlInput").value="";
+  $("coverInput").value="";
+  $("coverPreview").src="";
+  $("coverPreview").style.display="none";
+  $("coverPreview").style.objectPosition="50% 50%";
+  $("coverPreview").style.transform="scale(1)";
+  $("coverHint").style.display="block";
+  $("coverHint").textContent="اضغطي لاختيار صورة الغلاف";
+  $("cropTools").classList.remove("show");
+  cropX=50;cropY=50;cropZoom=100;
+  $("zoomRange").value="100";
+  $("zoomValue").textContent="100%";
+  $("trackingCode").value="";
+  $("codeBox").style.display="none";
+  clearNotice($("saveNotice"));
+}
+$("addBtn").onclick=()=>{
+  resetAddProjectForm();
+  openModal("addModal");
+};
 $("refreshBtn").onclick=loadData;
 $("heroPicker").onclick=()=>{
   if(!adminPass){openModal("loginModal");showNotice($("loginNotice"),"سجلي الدخول أولًا حتى تقدري تغيري الصورة.");return}
@@ -326,7 +350,10 @@ $("saveBtn").onclick=async()=>{
     $("codeBox").style.display="block";
     await loadData();
     // يظهر المشروع والأرقام مباشرة في الصفحة الرئيسية بعد الحفظ.
-    setTimeout(()=>closeModal("addModal"),900);
+    setTimeout(()=>{
+      closeModal("addModal");
+      resetAddProjectForm();
+    },900);
   }catch(e){showNotice($("saveNotice"),e.message)}
   finally{$("saveBtn").disabled=false;$("saveBtn").textContent="حفظ وربط"}
 };
