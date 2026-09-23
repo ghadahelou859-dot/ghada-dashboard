@@ -45,7 +45,7 @@ body{margin:0;font-family:Arial,Tahoma,sans-serif;background:linear-gradient(180
 .cover .badge{position:relative;z-index:2}
 .badge{background:#ffffffdd;border:1px solid var(--line);border-radius:999px;padding:6px 9px;font-size:12px;color:var(--muted)}
 .status-badge{display:inline-flex;align-items:center;gap:6px;margin-top:8px;border-radius:999px;padding:6px 9px;font-size:12px;border:1px solid var(--line)}
-.status-badge.live{background:#edf8f3;color:#345f4e;border-color:#cce7da}.status-badge.wait{background:#fff8e7;color:#7d6330;border-color:#ecdba9}.status-badge.off{background:#f6f2f4;color:#7e7179}
+.status-badge.live{background:#edf8f3;color:#345f4e;border-color:#cce7da}.status-badge.wait{background:#fff8e7;color:#7d6330;border-color:#ecdba9}.status-badge.off{background:#f6f2f4;color:#7e7179}.status-badge.pending{background:#eef3ff;color:#425a8a;border-color:#ccd7f3}
 .project-body{padding:14px}
 .project-title{font-weight:700;margin-bottom:8px}
 .stats{display:flex;gap:10px;flex-wrap:wrap;color:var(--muted);font-size:13px}
@@ -393,6 +393,7 @@ async function loadData(){
 function trackingStatus(p){
   if(p.last_view_at)return {label:"مربوط ويستقبل بيانات",cls:"live",dot:"●"};
   if(p.tracking_enabled)return {label:"مربوط — بانتظار أول زيارة",cls:"wait",dot:"●"};
+  if(p.tracking_request_status==="pending")return {label:"طلب الربط جاهز",cls:"pending",dot:"●"};
   return {label:"مضاف فقط",cls:"off",dot:"○"};
 }
 function renderProjects(){
@@ -417,9 +418,14 @@ function openDetails(slug){
   $("detailLinkWrap").innerHTML=`
     <div class="actions">
       <button class="btn alt" id="editProjectBtn" type="button">✏️ تعديل المشروع</button>
+      ${(!p.tracking_enabled && p.tracking_request_status!=="pending" && p.project_url)?'<button class="btn" id="requestTrackingBtn" type="button">ربط التتبع الآن</button>':''}
+      ${p.tracking_request_status==="pending"?'<span class="status-badge pending">● طلب الربط جاهز</span>':''}
       ${p.project_url?'<button class="btn" id="openInsideBtn" type="button">فتح داخل الصفحة</button><a class="link" target="_blank" rel="noopener" href="'+p.project_url+'">فتح في تبويب جديد ↗</a>':'<span class="muted">لا يوجد رابط محفوظ للمشروع.</span>'}
     </div>`;
   $("editProjectBtn").onclick=()=>openEditProject(p);
+  if(document.getElementById("requestTrackingBtn")){
+    $("requestTrackingBtn").onclick=()=>requestTracking(p);
+  }
   if(p.project_url){
     $("openInsideBtn").onclick=()=>openProjectPreview(p);
   }
@@ -508,6 +514,27 @@ $("editSaveBtn").onclick=async()=>{
     setTimeout(()=>closeModal("editModal"),700);
   }catch(e){showNotice($("editNotice"),e.message)}
   finally{$("editSaveBtn").disabled=false;$("editSaveBtn").textContent="حفظ التعديلات"}
+}
+async function requestTracking(p){
+  const btn=$("requestTrackingBtn");
+  if(!btn)return;
+  btn.disabled=true;btn.textContent="جاري تجهيز الربط...";
+  try{
+    const j=await jsonApi({action:"request_tracking",password:adminPass,slug:p.slug});
+    if(j.already_connected){
+      await loadData();
+      openDetails(p.slug);
+      return;
+    }
+    await loadData();
+    const fresh=projectsData.find(x=>x.slug===p.slug);
+    closeModal("detailModal");
+    if(fresh)openDetails(fresh.slug);
+  }catch(e){
+    alert(e.message);
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent="ربط التتبع الآن"}
+  }
 }
 function openProjectPreview(p){
   if(!p?.project_url)return;
