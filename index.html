@@ -44,6 +44,8 @@ body{margin:0;font-family:Arial,Tahoma,sans-serif;background:linear-gradient(180
 .cover>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none}
 .cover .badge{position:relative;z-index:2}
 .badge{background:#ffffffdd;border:1px solid var(--line);border-radius:999px;padding:6px 9px;font-size:12px;color:var(--muted)}
+.status-badge{display:inline-flex;align-items:center;gap:6px;margin-top:8px;border-radius:999px;padding:6px 9px;font-size:12px;border:1px solid var(--line)}
+.status-badge.live{background:#edf8f3;color:#345f4e;border-color:#cce7da}.status-badge.wait{background:#fff8e7;color:#7d6330;border-color:#ecdba9}.status-badge.off{background:#f6f2f4;color:#7e7179}
 .project-body{padding:14px}
 .project-title{font-weight:700;margin-bottom:8px}
 .stats{display:flex;gap:10px;flex-wrap:wrap;color:var(--muted);font-size:13px}
@@ -388,6 +390,11 @@ async function loadData(){
     renderProjects();
   }catch(e){$("projects").innerHTML='<div class="empty">'+e.message+"</div>"}
 }
+function trackingStatus(p){
+  if(p.last_view_at)return {label:"مربوط ويستقبل بيانات",cls:"live",dot:"●"};
+  if(p.tracking_enabled)return {label:"مربوط — بانتظار أول زيارة",cls:"wait",dot:"●"};
+  return {label:"مضاف فقط",cls:"off",dot:"○"};
+}
 function renderProjects(){
   if(!adminPass){$("projects").innerHTML='<div class="empty">سجلي الدخول لعرض المشاريع.</div>';return}
   const rows=currentFilter==="all"?projectsData:projectsData.filter(p=>p.project_type===currentFilter);
@@ -395,13 +402,14 @@ function renderProjects(){
   $("projects").innerHTML=rows.map(p=>`
     <div class="project" data-slug="${p.slug}">
       <div class="cover">${p.cover_image_url?`<img src="${p.cover_image_url}" alt="" style="object-position:${Number(p.cover_position_x||50)}% ${Number(p.cover_position_y||50)}%;transform:scale(${Number(p.cover_zoom||100)/100})">`:""}<span class="badge">${typeLabel(p.project_type)}</span></div>
-      <div class="project-body"><div class="project-title">${escapeHtml(p.title)}</div><div class="stats"><span>👁 ${p.total_views}</span><span>👤 ${p.unique_visitors}</span><span>❤️ ${p.total_likes}</span><span>💬 ${p.total_comments}</span><span>⭐ ${p.total_ratings}</span></div></div>
+      <div class="project-body"><div class="project-title">${escapeHtml(p.title)}</div><div class="stats"><span>👁 ${p.total_views}</span><span>👤 ${p.unique_visitors}</span><span>❤️ ${p.total_likes}</span><span>💬 ${p.total_comments}</span><span>⭐ ${p.total_ratings}</span></div>${(()=>{const s=trackingStatus(p);return '<div class="status-badge '+s.cls+'">'+s.dot+' '+s.label+'</div>'})()}</div>
     </div>`).join("");
   document.querySelectorAll(".project").forEach(card=>card.onclick=()=>openDetails(card.dataset.slug));
 }
 function openDetails(slug){
   const p=projectsData.find(x=>x.slug===slug);if(!p)return;
-  $("detailTitle").textContent=p.title;$("detailType").textContent=typeLabel(p.project_type);
+  $("detailTitle").textContent=p.title;const ts=trackingStatus(p);
+  $("detailType").innerHTML=typeLabel(p.project_type)+' · <span class="status-badge '+ts.cls+'">'+ts.dot+' '+ts.label+'</span>';
   $("detailCover").innerHTML=p.cover_image_url?`<img src="${p.cover_image_url}" alt="" style="object-position:${Number(p.cover_position_x||50)}% ${Number(p.cover_position_y||50)}%;transform:scale(${Number(p.cover_zoom||100)/100})">`:"";
   $("detailKpis").innerHTML=[
     ["الزيارات",p.total_views],["الزوار",p.unique_visitors],["الإعجابات",p.total_likes],["التعليقات",p.total_comments],["التقييمات",p.total_ratings]
