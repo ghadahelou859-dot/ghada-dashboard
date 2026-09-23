@@ -157,6 +157,25 @@ body{margin:0;font-family:Arial,Tahoma,sans-serif;background:linear-gradient(180
   </div>
 </div></div>
 
+<div id="editModal" class="modal"><div class="modal-card">
+  <div class="top"><div><strong style="font-size:22px">تعديل المشروع</strong><div class="muted">تعديل الرابط والصورة والمعلومات بدون تغيير الإحصائيات.</div></div><button class="close" data-close="editModal">×</button></div>
+  <div class="form">
+    <div class="field full"><label>صورة الغلاف</label>
+      <div id="editPicker" class="preview"><input id="editCoverInput" type="file" accept="image/jpeg,image/png,image/webp" hidden><img id="editCoverPreview"><span id="editCoverHint">اضغطي لتغيير الصورة</span></div>
+      <div id="editCropTools" class="crop-tools show">
+        <div class="crop-row"><span class="muted">تكبير / تصغير</span><input id="editZoomRange" type="range" min="60" max="250" value="100" step="1"><strong id="editZoomValue">100%</strong></div>
+        <div class="crop-help">اسحبي الصورة داخل الإطار لتعدلي الجزء الظاهر.</div>
+      </div>
+    </div>
+    <div class="field"><label>اسم المشروع</label><input id="editTitleInput" maxlength="120"></div>
+    <div class="field"><label>نوع المشروع</label><select id="editTypeInput"><option value="invitation">كرت / دعوة</option><option value="lesson">درس تفاعلي</option><option value="interactive_page">صفحة تفاعلية</option><option value="other">أخرى</option></select></div>
+    <div class="field"><label>Slug</label><input id="editSlugInput" readonly></div>
+    <div class="field"><label>رابط المشروع</label><input id="editUrlInput" type="url" placeholder="https://..."></div>
+  </div>
+  <div class="actions"><button id="editSaveBtn" class="btn">حفظ التعديلات</button><button class="btn alt" data-close="editModal">إلغاء</button></div>
+  <div id="editNotice" class="notice"></div>
+</div></div>
+
 <div id="projectPreviewModal" class="modal">
   <div class="preview-shell">
     <div class="preview-head">
@@ -174,6 +193,7 @@ let adminPass=sessionStorage.getItem("ghada_admin_pass")||"";
 let projectsData=[];
 let currentFilter="all";
 let cropX=50,cropY=50,cropZoom=100,cropDragging=false,cropStartX=0,cropStartY=0,cropStartPX=50,cropStartPY=50;
+let editCropX=50,editCropY=50,editCropZoom=100,editDragging=false,editStartX=0,editStartY=0,editStartPX=50,editStartPY=50,editingProject=null;
 
 function openModal(id){$(id).classList.add("open")}
 function closeModal(id){$(id).classList.remove("open")}
@@ -359,15 +379,100 @@ function openDetails(slug){
   $("detailKpis").innerHTML=[
     ["الزيارات",p.total_views],["الزوار",p.unique_visitors],["الإعجابات",p.total_likes],["التعليقات",p.total_comments],["التقييمات",p.total_ratings]
   ].map(([l,v])=>`<div class="detail-kpi"><small class="muted">${l}</small><strong>${v}</strong></div>`).join("");
-  $("detailLinkWrap").innerHTML=p.project_url?`
+  $("detailLinkWrap").innerHTML=`
     <div class="actions">
-      <button class="btn" id="openInsideBtn" type="button">فتح داخل الصفحة</button>
-      <a class="link" target="_blank" rel="noopener" href="${p.project_url}">فتح في تبويب جديد ↗</a>
-    </div>`:'<span class="muted">لا يوجد رابط محفوظ للمشروع.</span>';
+      <button class="btn alt" id="editProjectBtn" type="button">✏️ تعديل المشروع</button>
+      ${p.project_url?'<button class="btn" id="openInsideBtn" type="button">فتح داخل الصفحة</button><a class="link" target="_blank" rel="noopener" href="'+p.project_url+'">فتح في تبويب جديد ↗</a>':'<span class="muted">لا يوجد رابط محفوظ للمشروع.</span>'}
+    </div>`;
+  $("editProjectBtn").onclick=()=>openEditProject(p);
   if(p.project_url){
     $("openInsideBtn").onclick=()=>openProjectPreview(p);
   }
   openModal("detailModal");
+}
+function applyEditCropPreview(){
+  $("editCoverPreview").style.objectPosition=editCropX+"% "+editCropY+"%";
+  $("editCoverPreview").style.transform="scale("+(editCropZoom/100)+")";
+  $("editZoomRange").value=editCropZoom;
+  $("editZoomValue").textContent=Math.round(editCropZoom)+"%";
+}
+function openEditProject(p){
+  editingProject=p;
+  $("editTitleInput").value=p.title||"";
+  $("editTypeInput").value=p.project_type||"other";
+  $("editSlugInput").value=p.slug||"";
+  $("editUrlInput").value=p.project_url||"";
+  editCropX=Number(p.cover_position_x||50);
+  editCropY=Number(p.cover_position_y||50);
+  editCropZoom=Number(p.cover_zoom||100);
+  $("editCoverInput").value="";
+  if(p.cover_image_url){
+    $("editCoverPreview").src=p.cover_image_url;
+    $("editCoverPreview").style.display="block";
+    $("editCoverHint").style.display="none";
+  }else{
+    $("editCoverPreview").style.display="none";
+    $("editCoverHint").style.display="block";
+  }
+  applyEditCropPreview();
+  clearNotice($("editNotice"));
+  closeModal("detailModal");
+  openModal("editModal");
+}
+$("editPicker").onclick=e=>{
+  if($("editCoverPreview").style.display==="block" && e.target.id!=="editCoverHint") return;
+  $("editCoverInput").click();
+};
+$("editCoverHint").onclick=e=>{e.stopPropagation();$("editCoverInput").click()};
+$("editCoverInput").onchange=()=>{
+  const f=$("editCoverInput").files?.[0];if(!f)return;
+  const u=URL.createObjectURL(f);
+  $("editCoverPreview").src=u;
+  $("editCoverPreview").style.display="block";
+  $("editCoverHint").style.display="none";
+  editCropX=50;editCropY=50;editCropZoom=100;
+  applyEditCropPreview();
+};
+$("editZoomRange").oninput=e=>{editCropZoom=Number(e.target.value);applyEditCropPreview()};
+$("editPicker").addEventListener("pointerdown",e=>{
+  if($("editCoverPreview").style.display!=="block")return;
+  editDragging=true;editStartX=e.clientX;editStartY=e.clientY;editStartPX=editCropX;editStartPY=editCropY;
+  $("editPicker").setPointerCapture?.(e.pointerId);
+});
+$("editPicker").addEventListener("pointermove",e=>{
+  if(!editDragging)return;
+  const r=$("editPicker").getBoundingClientRect();
+  editCropX=Math.max(0,Math.min(100,editStartPX-(e.clientX-editStartX)/r.width*100));
+  editCropY=Math.max(0,Math.min(100,editStartPY-(e.clientY-editStartY)/r.height*100));
+  applyEditCropPreview();
+});
+["pointerup","pointercancel","pointerleave"].forEach(ev=>$("editPicker").addEventListener(ev,()=>{editDragging=false}));
+$("editSaveBtn").onclick=async()=>{
+  if(!editingProject)return;
+  clearNotice($("editNotice"));
+  const title=$("editTitleInput").value.trim();
+  if(!title)return showNotice($("editNotice"),"اسم المشروع مطلوب.");
+  const fd=new FormData();
+  fd.append("action","update_project");
+  fd.append("password",adminPass);
+  fd.append("slug",editingProject.slug);
+  fd.append("title",title);
+  fd.append("project_type",$("editTypeInput").value);
+  fd.append("project_url",$("editUrlInput").value.trim());
+  fd.append("cover_position_x",String(editCropX));
+  fd.append("cover_position_y",String(editCropY));
+  fd.append("cover_zoom",String(editCropZoom));
+  const f=$("editCoverInput").files?.[0];if(f)fd.append("cover",f);
+  $("editSaveBtn").disabled=true;$("editSaveBtn").textContent="جاري الحفظ...";
+  try{
+    const r=await fetch(API,{method:"POST",body:fd});
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok)throw new Error(j.error||"تعذر حفظ التعديلات.");
+    showNotice($("editNotice"),"✓ تم تحديث المشروع بدون تغيير الإحصائيات.",true);
+    await loadData();
+    setTimeout(()=>closeModal("editModal"),700);
+  }catch(e){showNotice($("editNotice"),e.message)}
+  finally{$("editSaveBtn").disabled=false;$("editSaveBtn").textContent="حفظ التعديلات"}
 }
 function openProjectPreview(p){
   if(!p?.project_url)return;
