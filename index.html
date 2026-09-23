@@ -18,7 +18,9 @@ body{margin:0;font-family:Arial,Tahoma,sans-serif;background:linear-gradient(180
 .brand{font-size:14px;color:var(--muted);margin-bottom:6px}
 .hero h1{margin:0 0 8px;font-size:clamp(28px,4vw,42px)}
 .hero p{margin:0;color:var(--muted);line-height:1.8}
-.hero-art{min-height:220px;border-radius:24px;border:1px solid var(--line);background:radial-gradient(circle at 30% 25%,#f3dce7 0,transparent 35%),radial-gradient(circle at 75% 75%,#e2d9f1 0,transparent 32%),linear-gradient(145deg,#fff,#f8eef5);display:flex;align-items:center;justify-content:center}
+.hero-art{min-height:220px;border-radius:24px;border:1px solid var(--line);background:radial-gradient(circle at 30% 25%,#f3dce7 0,transparent 35%),radial-gradient(circle at 75% 75%,#e2d9f1 0,transparent 32%),linear-gradient(145deg,#fff,#f8eef5);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;cursor:pointer}
+.hero-art img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none}
+.hero-image-hint{position:absolute;bottom:14px;right:14px;z-index:3;background:#ffffffdf;border:1px solid var(--line);border-radius:999px;padding:7px 10px;font-size:12px;color:var(--muted)}
 .monogram{width:96px;height:96px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#fff;border:1px solid var(--line);font-size:38px;font-weight:700;color:var(--rose);box-shadow:var(--shadow)}
 .actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:16px}
 .btn{border:none;border-radius:999px;padding:11px 16px;font:inherit;font-weight:700;cursor:pointer;background:var(--rose);color:#fff}
@@ -80,7 +82,12 @@ body{margin:0;font-family:Arial,Tahoma,sans-serif;background:linear-gradient(180
       </div>
       <div id="status" class="muted" style="margin-top:9px">سجلي الدخول لعرض الإحصائيات الخاصة.</div>
     </div>
-    <div class="hero-art"><div class="monogram">G</div></div>
+    <div class="hero-art" id="heroPicker" role="button" tabindex="0" aria-label="إضافة أو تغيير الصورة الرئيسية">
+      <input id="heroInput" type="file" accept="image/jpeg,image/png,image/webp" hidden>
+      <img id="heroImage" alt="الصورة الرئيسية">
+      <div id="heroMonogram" class="monogram">G</div>
+      <div id="heroHint" class="hero-image-hint">اضغطي لإضافة صورة رئيسية</div>
+    </div>
   </section>
 
   <section class="metrics">
@@ -177,6 +184,35 @@ $("doLogin").onclick=async()=>{
 $("logoutBtn").onclick=()=>{adminPass="";sessionStorage.removeItem("ghada_admin_pass");projectsData=[];authUI();resetMetrics();renderProjects()};
 $("addBtn").onclick=()=>{clearNotice($("saveNotice"));$("codeBox").style.display="none";openModal("addModal")};
 $("refreshBtn").onclick=loadData;
+$("heroPicker").onclick=()=>{
+  if(!adminPass){openModal("loginModal");showNotice($("loginNotice"),"سجلي الدخول أولًا حتى تقدري تغيري الصورة.");return}
+  $("heroInput").click();
+};
+$("heroPicker").onkeydown=e=>{
+  if((e.key==="Enter"||e.key===" ")&&adminPass){e.preventDefault();$("heroInput").click()}
+};
+$("heroInput").onchange=async()=>{
+  const f=$("heroInput").files?.[0];
+  if(!f)return;
+  const fd=new FormData();
+  fd.append("action","update_hero_image");
+  fd.append("password",adminPass);
+  fd.append("hero_image",f);
+  $("heroHint").textContent="جاري حفظ الصورة...";
+  try{
+    const r=await fetch(API,{method:"POST",body:fd});
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok)throw new Error(j.error||"تعذر حفظ الصورة.");
+    $("heroImage").src=j.hero_image_url;
+    $("heroImage").style.display="block";
+    $("heroMonogram").style.display="none";
+    $("heroHint").textContent="اضغطي لتغيير الصورة";
+  }catch(e){
+    $("heroHint").textContent="تعذر حفظ الصورة — اضغطي للمحاولة";
+    alert(e.message);
+  }
+};
+
 
 $("titleInput").oninput=e=>{if(!$("slugInput").dataset.edited)$("slugInput").value=slugify(e.target.value)};
 $("slugInput").oninput=e=>$("slugInput").dataset.edited=e.target.value?"1":"";
@@ -232,6 +268,16 @@ async function loadData(){
     $("mComments").textContent=j.totals.total_comments;
     $("mRatings").textContent=j.totals.total_ratings;
     projectsData=j.projects||[];
+    if(j.hero_image_url){
+      $("heroImage").src=j.hero_image_url;
+      $("heroImage").style.display="block";
+      $("heroMonogram").style.display="none";
+      $("heroHint").textContent="اضغطي لتغيير الصورة";
+    }else{
+      $("heroImage").style.display="none";
+      $("heroMonogram").style.display="flex";
+      $("heroHint").textContent="اضغطي لإضافة صورة رئيسية";
+    }
     renderProjects();
   }catch(e){$("projects").innerHTML='<div class="empty">'+e.message+"</div>"}
 }
